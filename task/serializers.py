@@ -18,19 +18,9 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = '__all__'
 
-class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-# write_only=True is The password will only be used when creating/updating a user. 
-# required=True This ensures that the password field cannot be empty during registration.
-# style is the custom used to show in browsable API
-    class Meta:
-        model = User
-        fields = ['username', 'password', 'email']
-        
-    def create(self, validated_data): # validated_data is the dictionary of user input that is already safe.
-        user = User.objects.create_user(
-            username=validated_data['username'], # validated_data['username'] = taking the username from that dictionary.
-            password=validated_data['password'],
-            emial=validated_data.get['email']
-        )
-        return user
+#TaskSerializer:
+# Converts the Task model into JSON so it can be sent to clients.
+
+# Also allows incoming JSON data to be converted into Python objects and saved to the database.
+
+# Purpose: Bridges Python models ↔ JSON for your API.
