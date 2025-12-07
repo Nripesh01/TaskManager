@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Task
-from .serializers import TaskSerializer
+from .serializers import TaskSerializer, UserRegisterSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
  # request.data contains the data which sent by the user
@@ -24,10 +24,11 @@ def frontend(request):
     return render(request, 'list.html')
 
 
-# class RegisterUserView(generics.CreateAPIView):
-#     queryset = User.objects.all()
-#     serializer_class = UserRegisterSerializer
-#     permission_classes = [AllowAny]
+class RegisterUserView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegisterSerializer
+    permission_classes = [AllowAny]
+
 
 # class loginUserView(generics.CreateAPIView):
 #     permission_classes = [AllowAny]

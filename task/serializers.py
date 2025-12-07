@@ -24,3 +24,19 @@ class TaskSerializer(serializers.ModelSerializer):
 # Also allows incoming JSON data to be converted into Python objects and saved to the database.
 
 # Purpose: Bridges Python models ↔ JSON for your API.
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model = User
+        feilds = ['username', 'password', 'email']
+        
+    def create(self, validate_data):
+        user = User.objects.create_user(
+            username=validate_data['username'],
+            emial=validate_data.get('email'),
+            password=validate_data['password']
+        )
+        return user
