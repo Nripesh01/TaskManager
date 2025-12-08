@@ -30,22 +30,23 @@ class RegisterUserView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
 
-# class loginUserView(generics.CreateAPIView):
-#     permission_classes = [AllowAny]
+class loginUserView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     
-#     def post(self, request):
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-#         user = authenticate(username=username, password=password)
-#         if user:
-#             refresh = RefreshToken.for_user(user)
-#             return({
-#                 'refresh': str(refresh),
-#                 'access' : str(refresh.access_token)
-#             })
-#         return Response({'error': 'Invalid credential'}, status=400)
-    
-    
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            })
+        
+        return Response({'error': 'Invalid credential'}, status=400)
+
+
 @api_view(['GET'])
 def task_list(request):
     task = Task.objects.all()
@@ -53,7 +54,9 @@ def task_list(request):
 # serializing a queryset (multiple objects), not just a single object.
     return Response(serializer.data)
 
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def task_create(request):
     serializer = TaskSerializer(data=request.data)
     if serializer.is_valid():
@@ -74,23 +77,27 @@ def task_create(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def task_detail(request, pk):
-    task = Task.objects.get(id=pk)
+    task = Task.objects.get(id=pk, user=request.data)
     serializer = TaskSerializer(task)
     return Response(serializer.data)
 
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def task_update(request, pk):
-    task = Task.objects.get(id=pk)
+    task = Task.objects.get(id=pk, user=request.data) # Only pick the task that belongs to the currently logged-in user.
     serializer = TaskSerializer(instance=task, data=request.data) 
     # instance This is the existing object I want to update.”
     # data=request.data contains new data coming from the client in the POST/PUT/PATCH request.
     if serializer.is_valid():
         serializer.save()
-    return Response(serializer.data)
+        return Response(serializer.data)
+    return Response(serializer.errors)
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def task_delete(request, pk):
-    task = Task.objects.get(id=pk)
+    task = Task.objects.get(id=pk, user=request.user)
     task.delete()
     return Response({"message": "delete"})

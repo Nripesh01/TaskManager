@@ -31,12 +31,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        feilds = ['username', 'password', 'email']
+        fields = ['username', 'password', 'email']
         
-    def create(self, validate_data):
+    def create(self, validated_data):
         user = User.objects.create_user(
-            username=validate_data['username'],
-            emial=validate_data.get('email'),
-            password=validate_data['password']
+            username=validated_data['username'],
+            emial=validated_data.get('email'),
+            password=validated_data['password']
         )
         return user
