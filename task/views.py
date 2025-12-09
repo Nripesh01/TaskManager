@@ -48,6 +48,9 @@ class loginUserView(APIView):
         return Response({'error': 'Invalid credential'}, status=400)
 
 
+# Permissions
+# Most endpoints require authentication (IsAuthenticated) except login/register (AllowAny).
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def task_list(request):
