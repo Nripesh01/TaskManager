@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Task
 from .serializers import TaskSerializer, UserRegisterSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 
  # request.data contains the data which sent by the user
     # data= mean the incoming data is sent by user valid it and save to the db.
@@ -30,7 +31,7 @@ class RegisterUserView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
 
-class loginUserView(generics.CreateAPIView):
+class loginUserView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
@@ -39,7 +40,7 @@ class loginUserView(generics.CreateAPIView):
         user = authenticate(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)
-            return({
+            return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token)
             })
@@ -48,8 +49,9 @@ class loginUserView(generics.CreateAPIView):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def task_list(request):
-    task = Task.objects.all()
+    task = Task.objects.filter(user=request.user)
     serializer = TaskSerializer(task, many=True) # many=True It tells the serializer that you are  
 # serializing a queryset (multiple objects), not just a single object.
     return Response(serializer.data)
@@ -60,7 +62,7 @@ def task_list(request):
 def task_create(request):
     serializer = TaskSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()  # At this point, the DRF view has Python data, not JSON yet.
+        serializer.save(user=request.user)  # At this point, the DRF view has Python data, not JSON yet.
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors) # Response is a special class used to send data back to the 
                                        # client (like Postman, a frontend app, or a mobile app)
@@ -79,19 +81,19 @@ def task_create(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def task_detail(request, pk):
-    task = Task.objects.get(id=pk, user=request.data)
+    task = Task.objects.get(id=pk, user=request.user)
     serializer = TaskSerializer(task)
     return Response(serializer.data)
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def task_update(request, pk):
-    task = Task.objects.get(id=pk, user=request.data) # Only pick the task that belongs to the currently logged-in user.
+    task = Task.objects.get(id=pk) # Only pick the task that belongs to the currently logged-in user.
     serializer = TaskSerializer(instance=task, data=request.data) 
     # instance This is the existing object I want to update.”
     # data=request.data contains new data coming from the client in the POST/PUT/PATCH request.
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(user=request.user)
         return Response(serializer.data)
     return Response(serializer.errors)
 
@@ -100,4 +102,5 @@ def task_update(request, pk):
 def task_delete(request, pk):
     task = Task.objects.get(id=pk, user=request.user)
     task.delete()
-    return Response({"message": "delete"})
+    return Response({"message": "delete successfully"})
+
