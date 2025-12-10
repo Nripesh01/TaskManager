@@ -1,0 +1,84 @@
+APIView
+APIView is the base class for all class-based views in DRF.
+You can define any method (get, post, put, delete, etc.) manually.
+Gives full control over how the view behaves.
+Use APIView → when your logic is custom (like login with JWT).or Use it when your view needs custom behavior that the generic views cannot provide.
+
+DRF does not have a built-in generic view for login, because login usually involves:
+   Authenticating user credentials
+   Creating JWT tokens
+   Returning a custom response
+So you write this custom logic inside post().
+
+
+Response
+Response is like Django’s HttpResponse, but designed for APIs.
+It automatically converts Python objects to JSON using DRF renderers.
+You use it in DRF views to send data back to the client.
+
+
+status 
+DRF provides named constants for HTTP status codes.
+Makes your code more readable than writing numbers like 200, 400, 404.
+     status.HTTP_201_CREATED → 201
+     status.HTTP_400_BAD_REQUEST → 400
+
+
+
+generics is a module inside DRF. → for standard CRUD
+Use generics → when you just want standard CRUD behavior (like creating or listing users/tasks).
+
+GenericAPIView:
+GenericAPIView is a class inside the generics module: GenericAPIView inherits from APIView
+    (from rest_framework.generics import GenericAPIView)
+GenericAPIView is the base class that all the pre-built generic views inherit from.
+
+Inside this module, you have classes like:
+Generic View	                           Methods	                                Purpose
+CreateAPIView	                           POST	                                  Create object
+ListAPIView	                               GET	                                 List all objects
+RetrieveAPIView	                           GET	                              Retrieve single object
+UpdateAPIView	                         PUT/PATCH	                              Update object
+DestroyAPIView	                           DELETE	                              Delete object
+ListCreateAPIView	                     GET, POST	                              List + create
+RetrieveUpdateAPIView	              GET, PUT/PATCH	                        Retrieve + update
+RetrieveDestroyAPIView	               GET, DELETE	                            Retrieve + delete
+RetrieveUpdateDestroyAPIView	   GET, PUT/PATCH,DELETE 	                 Full CRUD for one object
+
+purpose: Provides ready-to-use views for CRUD operations.
+
+GenericAPIView Does NOT implement HTTP methods (get, post, put, delete) but Gives you all the generic features you need for CRUD operations:
+
+Feature	                                                                 Purpose
+queryset                                                           Fetch objects from DB
+get_queryset()	                                               allows dynamic filtering based on request, user, or query params.
+serializer_class                                                  Serialize/deserialize objects
+get_serializer()	                          get_serializer() is a method provided by GenericAPIView to create a serializer instance.
+lookup_field / get_object()	                                         Retrieve single object safely
+Pagination	                                                           Split results into pages
+Filtering & Search	                                                  Filter or search querysets
+Permissions	                                                         Control who can access the view
+Authentication	                                                        Enforce login/JWT, etc.
+Serializer context                                                  Pass request/view info to serializer
+
+GenericAPIView does not implement HTTP methods (get, post, etc.)
+Pre-built generics like ListAPIView, CreateAPIView inherit from it and use all these features while implementing the HTTP methods automatically.
+
+
+
+RefreshToken:
+Part of DRF Simple JWT, used for JWT authentication.
+JWT tokens include:
+Access token → short-lived, used to access API endpoints
+Refresh token → long-lived, used to generate a new access token
+
+
+
+permission_classes & permissions:
+permission_classes is a decorator or attribute that tells DRF which permissions to enforce for that view.
+Permissions control who can access an API endpoint.
+
+Common DRF permissions:
+AllowAny → anyone can access
+IsAuthenticated → only logged-in users can access
+IsAdminUser → only admin users

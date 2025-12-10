@@ -10,7 +10,7 @@ from rest_framework import status, generics # status is a module from DRF that p
 # codes in a readable format.
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken # JWT (rest_framework_simplejwt) handles authentication tokens (refresh & access).
 from .models import Task
 from .serializers import TaskSerializer, UserRegisterSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -24,29 +24,32 @@ from rest_framework.views import APIView
 def frontend(request):
     return render(request, 'list.html')
 
+# class-based views (CBV) with DRF APIView / GenericAPIView
 
 class RegisterUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = User.objects.all() # query_set is a class attribute in your view that tells DRF which objects this view will work with.
     serializer_class = UserRegisterSerializer
+    # serializer_class is a class attribute specifying which serializer the view uses.
     permission_classes = [AllowAny]
 
-
+# loginUserView: APIView → handles POST manually, generates JWT tokens.
 class loginUserView(APIView):
     permission_classes = [AllowAny]
     
-    def post(self, request):
+    def post(self, request): # post() method in a DRF APIView is a Python function that handles HTTP POST requests.
+                             # post → this method is called automatically whenever the client sends a POST request to this view.
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
         if user:
-            refresh = RefreshToken.for_user(user)
+            refresh = RefreshToken.for_user(user) # generates refresh token for the logged-in user
             return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
+                'refresh': str(refresh), # refresh token object
+                'access': str(refresh.access_token) # automatically generates an access token
             })
         
         return Response({'error': 'Invalid credential'}, status=400)
-
+# Response() → converts Python objects to JSON automatically using DRF renderers
 
 # Permissions
 # Most endpoints require authentication (IsAuthenticated) except login/register (AllowAny).
@@ -59,7 +62,7 @@ def task_list(request):
 # serializing a queryset (multiple objects), not just a single object.
     return Response(serializer.data)
 
-
+# function-based views (FBV) with @api_view
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def task_create(request):
@@ -91,13 +94,13 @@ def task_detail(request, pk):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def task_update(request, pk):
-    task = Task.objects.get(id=pk) # Only pick the task that belongs to the currently logged-in user.
+    task = Task.objects.get(id=pk, user=request.user) # Fetch only tasks that belong to the logged-in user (security).
     serializer = TaskSerializer(instance=task, data=request.data) 
     # instance This is the existing object I want to update.”
     # data=request.data contains new data coming from the client in the POST/PUT/PATCH request.
     if serializer.is_valid():
-        serializer.save(user=request.user)
-        return Response(serializer.data)
+        serializer.save(user=request.user) # user=request.user Make sure the user field stays linked to the logged-in user when saving changes.
+        return Response(serializer.data) 
     return Response(serializer.errors)
 
 @api_view(['DELETE'])
