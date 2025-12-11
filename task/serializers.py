@@ -11,12 +11,30 @@
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Task
+from .models import Task, Category
+
+
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+        read_only_fields = ['user']
+        # read_only_fields = ['user']: This tells DRF not to expect the 'user' field from the client (so the client cannot change it).
+        # The field is read-only in the API.
+        
+# in views.py,  
+# serializer.save(user=request.user):
+   # Even though 'user' is read-only, you can still set it manually in the backend.
+   # DRF will take request.user (the currently logged-in user) and assign it to the 'user' field of the Task when saving.
+   # This ensures that the task always belongs to the logged-in user, even if the client doesn’t send a user field.
+        
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 
 #TaskSerializer:
 # Converts the Task model into JSON so it can be sent to clients.
@@ -40,3 +58,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+    
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        field = ['id', 'username', 'password', 'is_staff']

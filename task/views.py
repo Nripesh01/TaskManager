@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken # JWT (rest_framework_simplejwt) handles authentication tokens (refresh & access).
 from .models import Task
-from .serializers import TaskSerializer, UserRegisterSerializer
+from .serializers import TaskSerializer, UserRegisterSerializer, UserProfileSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 
@@ -28,11 +28,13 @@ def frontend(request):
 
 class RegisterUserView(generics.CreateAPIView):
     queryset = User.objects.all() # query_set is a class attribute in your view that tells DRF which objects this view will work with.
-    serializer_class = UserRegisterSerializer
+    # queryset → your model data
+    serializer_class = UserRegisterSerializer # serializer_class → your serializer, lookup_field → which field to filter objects
     # serializer_class is a class attribute specifying which serializer the view uses.
     permission_classes = [AllowAny]
 
 # loginUserView: APIView → handles POST manually, generates JWT tokens.
+# uses APIView because JWT token generation is custom logic.
 class loginUserView(APIView):
     permission_classes = [AllowAny]
     
@@ -54,6 +56,27 @@ class loginUserView(APIView):
 # Permissions
 # Most endpoints require authentication (IsAuthenticated) except login/register (AllowAny).
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profile(request):
+    serializer = UserProfileSerializer(request.data)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    user=request.user
+    
+    old_password = request.data.get('old_password')
+    new_password = request.data.get('new_password')
+    if not user.check_password(old_password):
+        return Response({'error': 'Old password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)
+    user.set_password(new_password)
+    user.save()
+    return Response({'message': 'Password changed successfully'})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def task_list(request):
@@ -66,9 +89,10 @@ def task_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def task_create(request):
-    serializer = TaskSerializer(data=request.data)
+    serializer = TaskSerializer(data=request.data) # data=request.data, it contains data sent by the user.
     if serializer.is_valid():
-        serializer.save(user=request.user)  # At this point, the DRF view has Python data, not JSON yet.
+        serializer.save(user=request.user) # ensures the task’s user field remains set to the logged-in user when creating. 
+        # At this point, the DRF view has Python data, not JSON yet.
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors) # Response is a special class used to send data back to the 
                                        # client (like Postman, a frontend app, or a mobile app)
@@ -99,8 +123,7 @@ def task_update(request, pk):
     # instance This is the existing object I want to update.”
     # data=request.data contains new data coming from the client in the POST/PUT/PATCH request.
     if serializer.is_valid():
-        serializer.save(user=request.user) # user=request.user Make sure the user field stays linked to the logged-in user when saving changes.
-        return Response(serializer.data) 
+        serializer.save(user=request.user) # ensures the task’s user field remains set to the logged-in user when saving the update.
     return Response(serializer.errors)
 
 @api_view(['DELETE'])
