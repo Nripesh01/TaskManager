@@ -6,15 +6,16 @@ from rest_framework.decorators import api_view, permission_classes # api_view is
 # api_view is used to turn a Django view into an API view that can handle specific HTTP methods.
 # Response is used to return data from your API views to the client (like a browser or mobile app).
 # Response Works well with status codes and DRF features.
-from rest_framework import status, generics # status is a module from DRF that provides HTTP status 
+from rest_framework import  generics, filters, status # status is a module from DRF that provides HTTP status 
 # codes in a readable format.
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken # JWT (rest_framework_simplejwt) handles authentication tokens (refresh & access).
-from .models import Task
-from .serializers import TaskSerializer, UserRegisterSerializer, UserProfileSerializer
+from .models import Task, Category
+from .serializers import TaskSerializer, UserRegisterSerializer, UserProfileSerializer, CategorySerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
+
 
  # request.data contains the data which sent by the user
     # data= mean the incoming data is sent by user valid it and save to the db.
@@ -63,6 +64,8 @@ def profile(request):
     serializer = UserProfileSerializer(request.data)
     return Response(serializer.data)
 
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def change_password(request):
@@ -77,59 +80,42 @@ def change_password(request):
     return Response({'message': 'Password changed successfully'})
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def task_list(request):
-    task = Task.objects.filter(user=request.user)
-    serializer = TaskSerializer(task, many=True) # many=True It tells the serializer that you are  
-# serializing a queryset (multiple objects), not just a single object.
-    return Response(serializer.data)
-
-# function-based views (FBV) with @api_view
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def task_create(request):
-    serializer = TaskSerializer(data=request.data) # data=request.data, it contains data sent by the user.
-    if serializer.is_valid():
-        serializer.save(user=request.user) # ensures the task’s user field remains set to the logged-in user when creating. 
-        # At this point, the DRF view has Python data, not JSON yet.
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors) # Response is a special class used to send data back to the 
-                                       # client (like Postman, a frontend app, or a mobile app)
+class TaskListCreateView(generics.ListCreateAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    serach_fields = ['title', 'description']  # Search Find all items where a field partially matches the search text.
+    ordering_fields = ['created_at', 'title'] # Sort the list of items by a specified field (ascending or descending)
     
-    # The Response class uses renderers (by default, JSONRenderer) to convert Python objects to JSON.
-
-    # If the request comes from a browser, DRF automatically uses the Browsable API renderer.
-
-    # The browser will show a nice interactive page instead of raw JSON.
-
-    # If the request comes from Postman, curl, or a mobile app, DRF sends raw JSON.
+    def get_queryset(self):
+        return Task.objects.filter(user=self.request.user)
+        # self.request → the current HTTP request object.
+        # self.request.user → the currently logged-in user making the API request.
+        # Your Task model probably has a "user=" field like this
+        # user=self.request.user filters tasks so that only tasks belonging to the logged-in user are returned.
+     
     
-    # It automatically handles JSON serialization, so you don’t have to manually convert Python objects to JSON.
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        
 
+class TaskRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Task.objects.filter(user=self.request.user) 
+       
+class CategoryListCreateView(generics.ListCreateAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+    
+    
+    def get_queryset(self):
+        return Category.objects.all()
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def task_detail(request, pk):
-    task = Task.objects.get(id=pk, user=request.user)
-    serializer = TaskSerializer(task)
-    return Response(serializer.data)
-
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def task_update(request, pk):
-    task = Task.objects.get(id=pk, user=request.user) # Fetch only tasks that belong to the logged-in user (security).
-    serializer = TaskSerializer(instance=task, data=request.data) 
-    # instance This is the existing object I want to update.”
-    # data=request.data contains new data coming from the client in the POST/PUT/PATCH request.
-    if serializer.is_valid():
-        serializer.save(user=request.user) # ensures the task’s user field remains set to the logged-in user when saving the update.
-    return Response(serializer.errors)
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def task_delete(request, pk):
-    task = Task.objects.get(id=pk, user=request.user)
-    task.delete()
-    return Response({"message": "delete successfully"})
-
+class CategoryRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Category.objects.all()
+    

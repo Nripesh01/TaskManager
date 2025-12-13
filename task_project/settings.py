@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'task.apps.TaskConfig',
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,8 +52,12 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
 ),
+        
+    'DEFAULT_PERMISSION_CLASSES': (
+    'rest_framework.permissions.IsAuthenticated',
+),
     'DEFAULT_PAGINATION_CLASS': 
-        'rest_framework.pagination.PageNumberPagniation',
+        'rest_framework.pagination.PageNumberPagination',
         'PAGE_SIZE': 3,
 
 }
